@@ -1,5 +1,7 @@
 # Quick interpretability experiments for Thinking Machines Lab's Inkling
 
+_Project: Inkling interpretability_
+
 _Release reviewed: July 15, 2026_
 
 ## Recommendation
@@ -118,6 +120,8 @@ This is a compact one-afternoon experiment with a plausible short paper inside i
 
 This is speculative but potentially the most novel experiment.
 
+Detailed protocol: [LoRA-gradient router fingerprinting](lora_gradient_router_fingerprinting.md).
+
 Tinker uses a shared-outer LoRA scheme for MoE layers: one factor is shared across experts and the other remains expert-specific. Expert-specific adapter updates may therefore act as a routing side channel. See [`get_lora_param_count`](https://tinker-docs.thinkingmachines.ai/cookbook/api-reference/hyperparam_utils/get_lora_param_count/).
 
 ### Pilot design
@@ -128,7 +132,7 @@ Tinker uses a shared-outer LoRA scheme for MoE layers: one factor is shared acro
 4. Take one or two Adam steps with zero weight decay and save again.
 5. Diff the expert-specific tensors by layer.
 
-If the side channel works, nonzero update support should identify approximately six routed experts per layer.
+If the side channel works, nonzero update support should identify approximately six routed experts in each of Inkling's 64 sparse MLP layers. The first two MLP layers are dense.
 
 ### Validation
 
@@ -138,7 +142,7 @@ If the side channel works, nonzero update support should identify approximately 
 - Verify the number of changed routed-expert tensors against Inkling's top-6 architecture.
 - Pilot both one and two optimizer steps because LoRA's zero/random factor initialization may delay changes in one factor until the second step.
 
-After validating text tokens, compare numbers, code tokens, natural-language words, minimal image patches, short audio, and different effort prefixes.
+After validating raw one-token text inputs, compare numbers, code tokens, and natural-language words. Multi-token, chat-rendered, image, and audio inputs produce prompt-level unions over the causal computation graph, so treat those as a later and coarser extension rather than per-token route recovery.
 
 If Adam or the adapter format obscures support, use the aggregate statistics returned by `forward_backward`: expert coverage, oversubscription, and maximum load violation. These are documented in [`ForwardBackwardOutput`](https://tinker-docs.thinkingmachines.ai/tinker/api-reference/types/forwardbackwardoutput/). Match sequence length and batch size exactly because expert coverage grows mechanically with token count.
 
